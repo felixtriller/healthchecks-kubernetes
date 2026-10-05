@@ -1,0 +1,6 @@
+apiVersion: v2
+name: healthchecks-kubernetes
+description: Automatically monitor Kubernetes CronJobs with self-hosted Healthchecks
+version: 0.1.0
+appVersion: "0.1.0"
+type: application

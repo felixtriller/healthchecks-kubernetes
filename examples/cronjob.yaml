@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: healthchecks-example
+  annotations:
+    healthchecks.io/include: "true"
+    k8s.cronitor.io/exclude: "true"
+    healthchecks.io/grace-seconds: "120"
+    healthchecks.io/tags: "example"
+spec:
+  schedule: "*/5 * * * *"
+  timeZone: UTC
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: example
+              image: busybox:1.37
+              command: [sh, -c, 'echo Example run; sleep 10']

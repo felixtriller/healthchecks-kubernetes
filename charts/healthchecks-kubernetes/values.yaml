@@ -1,0 +1,37 @@
+# Build and push this image to your registry before installing.
+image:
+  repository: healthchecks-kubernetes
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+credentials:
+  # Required: a Secret in the release namespace containing a project read-write key.
+  existingSecret: ""
+  key: HEALTHCHECKS_API_KEY
+
+config:
+  apiUrl: https://healthchecks.example.com/api/v3
+  # Required. Keep this stable and unique across clusters sharing a project.
+  cluster: ""
+  # Empty watches all namespaces. A value restricts watches and RBAC to that namespace.
+  namespace: ""
+  defaultInclude: true
+  graceSeconds: 300
+  timezone: UTC
+  # * attaches all existing project integrations. Use IDs/names to choose specific ones.
+  channels: "*"
+  resync: 5m
+  httpTimeout: 10s
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+nodeSelector: {}
+tolerations: []
+affinity: {}

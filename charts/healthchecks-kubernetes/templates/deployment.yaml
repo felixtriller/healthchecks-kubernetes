@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "healthchecks.fullname" . }}
+  labels:
+    {{- include "healthchecks.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "healthchecks.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "healthchecks.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "healthchecks.fullname" . }}
+      terminationGracePeriodSeconds: 45
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: controller
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - {{ printf "--cluster=%s" (required "config.cluster is required" .Values.config.cluster) | quote }}
+            - {{ printf "--namespace=%s" .Values.config.namespace | quote }}
+            - {{ printf "--state-name=%s" (include "healthchecks.fullname" .) | quote }}
+            - {{ printf "--default-include=%t" .Values.config.defaultInclude | quote }}
+            - {{ printf "--grace-seconds=%v" .Values.config.graceSeconds | quote }}
+            - {{ printf "--timezone=%s" .Values.config.timezone | quote }}
+            - {{ printf "--channels=%s" .Values.config.channels | quote }}
+            - {{ printf "--resync=%s" .Values.config.resync | quote }}
+            - {{ printf "--http-timeout=%s" .Values.config.httpTimeout | quote }}
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: HEALTHCHECKS_API_URL
+              value: {{ .Values.config.apiUrl | quote }}
+            - name: HEALTHCHECKS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "credentials.existingSecret is required" .Values.credentials.existingSecret | quote }}
+                  key: {{ .Values.credentials.key | quote }}
+          ports:
+            - name: health
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
