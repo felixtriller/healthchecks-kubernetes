@@ -20,6 +20,8 @@ consistent when changing configuration.
 
 ## Behavior to preserve
 
+- Use `healthchecks-kubernetes.felixtriller.github.io/` for controller annotations.
+  This project is not affiliated with Healthchecks.io; its domain is not ours.
 - Check identity depends on cluster, namespace, and CronJob name, not CronJob UID.
   Changing the identity or ownership hashes requires a migration plan.
 - Use terminal Job conditions for success/failure. Failed Pods and retries are not
@@ -77,8 +79,8 @@ and arm64; do not replace the target architecture with the builder architecture.
   error messages, and command-line arguments. Use placeholders in examples.
 - For live validation, use `python3 scripts/smoke-test.py --context k3s` with an
   explicit context. It creates real Kubernetes resources and Healthchecks checks.
-- Preserve the smoke test's namespace isolation, opt-in discovery, disabled
-  notification channels, and Cronitor exclusion annotations. Verify cleanup of
+- Preserve the smoke test's namespace isolation, opt-in discovery, and disabled
+  notification channels. Verify cleanup of
   both the temporary namespace and its test-owned checks.
 - A successful smoke test does not authorize a permanent or cluster-wide rollout.
   Deployment configuration lives in `../gitops`; read that repository's

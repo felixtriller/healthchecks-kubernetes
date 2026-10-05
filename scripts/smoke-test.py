@@ -75,8 +75,8 @@ def cronjob(name, fail=False):
     return {
         "apiVersion": "batch/v1", "kind": "CronJob",
         "metadata": {"name": name, "annotations": {
-            "healthchecks.io/include": "true", "k8s.cronitor.io/exclude": "true",
-            "healthchecks.io/channels": "", "healthchecks.io/grace-seconds": "60",
+            "healthchecks-kubernetes.felixtriller.github.io/include": "true",
+            "healthchecks-kubernetes.felixtriller.github.io/channels": "", "healthchecks-kubernetes.felixtriller.github.io/grace-seconds": "60",
         }},
         "spec": {
             "schedule": "* * * * *", "timeZone": "UTC", "concurrencyPolicy": "Forbid",
@@ -200,7 +200,7 @@ def main():
             for job in get("jobs")["items"]:
                 if not any(owner["name"] == name and owner["kind"] == "CronJob" for owner in job["metadata"].get("ownerReferences", [])):
                     continue
-                marker = job["metadata"].get("annotations", {}).get("healthchecks.io/delivery", "{}")
+                marker = job["metadata"].get("annotations", {}).get("healthchecks-kubernetes.felixtriller.github.io/delivery", "{}")
                 if json.loads(marker).get("signal") == signal:
                     return True
             return False

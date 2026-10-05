@@ -3,10 +3,9 @@ kind: CronJob
 metadata:
   name: healthchecks-example
   annotations:
-    healthchecks.io/include: "true"
-    k8s.cronitor.io/exclude: "true"
-    healthchecks.io/grace-seconds: "120"
-    healthchecks.io/tags: "example"
+    healthchecks-kubernetes.felixtriller.github.io/include: "true"
+    healthchecks-kubernetes.felixtriller.github.io/grace-seconds: "120"
+    healthchecks-kubernetes.felixtriller.github.io/tags: "example"
 spec:
   schedule: "*/5 * * * *"
   timeZone: UTC

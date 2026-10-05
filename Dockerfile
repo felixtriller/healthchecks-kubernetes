@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldfl
 FROM alpine:3.23
 RUN apk add --no-cache ca-certificates
 COPY --from=build /healthchecks-kubernetes /healthchecks-kubernetes
+COPY LICENSE /usr/share/licenses/healthchecks-kubernetes/LICENSE
 USER 65532:65532
 EXPOSE 8080
 ENTRYPOINT ["/healthchecks-kubernetes"]

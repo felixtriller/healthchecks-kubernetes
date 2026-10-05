@@ -2,7 +2,7 @@
 
 A Go controller that automatically monitors Kubernetes CronJobs in [Healthchecks](https://github.com/healthchecks/healthchecks), including self-hosted instances. It watches CronJobs and Jobs; no changes to job commands, container images, or application code are required.
 
-This is an independent implementation. It uses Kubernetes client-go informers, a retry queue, and leader election. It does not depend on Cronitor or send third-party telemetry.
+This is an independent project and is not affiliated with or endorsed by Healthchecks.io. It uses Kubernetes client-go informers, a retry queue, and leader election. It does not depend on Cronitor or send third-party telemetry.
 
 ## What it does
 
@@ -51,7 +51,7 @@ commit-specific tag in GitOps. If the GHCR package is private, configure the
 chart's `imagePullSecrets` with credentials that can read the package.
 
 ```sh
-docker pull ghcr.io/felixtriller/healthchecks-kubernetes:main
+docker pull ghcr.io/felixtriller/healthchecks-kubernetes:0.1.0
 ```
 
 ## Install
@@ -63,7 +63,10 @@ kubectl create namespace monitoring
 kubectl -n monitoring create secret generic healthchecks-api --from-env-file=.env
 ```
 
-Install using the image published from `main`:
+The chart defaults to release `0.1.0` with `image.pullPolicy=IfNotPresent`.
+Both the chart and binary default to `https://healthchecks.io/api/v3`.
+For a self-hosted instance, override `config.apiUrl` as shown below.
+Install after the release image has been published:
 
 ```sh
 helm upgrade --install healthchecks ./charts/healthchecks-kubernetes \
@@ -77,7 +80,7 @@ Choose a stable, unique `config.cluster` for each cluster sharing a Healthchecks
 
 The chart runs one replica and uses a Recreate deployment strategy. Leader election also protects against overlap during shutdown and restart. Leadership can take up to approximately 30 seconds to transfer.
 
-By default, all CronJobs are included. For a limited rollout, set `config.defaultInclude=false` and annotate the selected CronJobs with `healthchecks.io/include: "true"`.
+By default, all CronJobs are included. For a limited rollout, set `config.defaultInclude=false` and annotate the selected CronJobs with `healthchecks-kubernetes.felixtriller.github.io/include: "true"`.
 
 For one namespace, set `config.namespace=jobs`. This renders a Role and RoleBinding in that namespace instead of cluster-wide permissions. The watched namespace must already exist. The ServiceAccount, Secret, controller state, and Lease stay in the Helm release namespace.
 
@@ -89,13 +92,13 @@ Put these on the CronJob's `metadata.annotations`, not on its Job or Pod templat
 
 | Annotation | Meaning | Default |
 | --- | --- | --- |
-| `healthchecks.io/include` | Opt a CronJob in; accepts a boolean string | Chart default |
-| `healthchecks.io/exclude` | Opt a CronJob out; `true` takes precedence over include | `false` |
-| `healthchecks.io/name` | Dashboard name, at most 100 characters | `cluster/namespace/name` |
-| `healthchecks.io/grace-seconds` | Grace period, 60–31536000 seconds | `300` |
-| `healthchecks.io/channels` | Comma-separated integration IDs/names; `*` selects all; empty selects none | `*` |
-| `healthchecks.io/tags` | Comma- or whitespace-separated extra tags | None |
-| `healthchecks.io/description` | Description or runbook link | Empty |
+| `healthchecks-kubernetes.felixtriller.github.io/include` | Opt a CronJob in; accepts a boolean string | Chart default |
+| `healthchecks-kubernetes.felixtriller.github.io/exclude` | Opt a CronJob out; `true` takes precedence over include | `false` |
+| `healthchecks-kubernetes.felixtriller.github.io/name` | Dashboard name, at most 100 characters | `cluster/namespace/name` |
+| `healthchecks-kubernetes.felixtriller.github.io/grace-seconds` | Grace period, 60–31536000 seconds | `300` |
+| `healthchecks-kubernetes.felixtriller.github.io/channels` | Comma-separated integration IDs/names; `*` selects all; empty selects none | `*` |
+| `healthchecks-kubernetes.felixtriller.github.io/tags` | Comma- or whitespace-separated extra tags | None |
+| `healthchecks-kubernetes.felixtriller.github.io/description` | Description or runbook link | Empty |
 
 The controller maintains its own tags for ownership, cluster, and namespace. Tags beginning with `hck-owner-` are reserved. Slugs are stable hashes of cluster/namespace/name; deleting and recreating the same CronJob preserves the check's history.
 
@@ -111,7 +114,7 @@ The controller sends a start signal when a Job has `status.startTime`, and succe
 
 A new or resumed Healthchecks check does not alert until it receives a ping. The controller therefore sends **one initialization success ping**, with a body explaining that monitoring was enabled and no Job execution is being reported. It uses the CronJob UID, separate from Job run IDs. This starts schedule monitoring even when the CronJob never launches. No synthetic start ping is sent for a Job already complete when discovered.
 
-Accepted run signals and a hash of the check identity are saved in the `healthchecks.io/delivery` annotation on each Job. The secret check UUID and ping URL are not stored in Kubernetes annotations. This requires Job `patch` permission. The controller does not modify Job specs, CronJob specs, or Pod specs. If a ping succeeds but writing its annotation fails, retrying can repeat the ping. Delivery is **at least once**, not exactly once; a network timeout after server acceptance has the same ambiguity.
+Accepted run signals and a hash of the check identity are saved in the `healthchecks-kubernetes.felixtriller.github.io/delivery` annotation on each Job. The secret check UUID and ping URL are not stored in Kubernetes annotations. This requires Job `patch` permission. The controller does not modify Job specs, CronJob specs, or Pod specs. If a ping succeeds but writing its annotation fails, retrying can repeat the ping. Delivery is **at least once**, not exactly once; a network timeout after server acceptance has the same ambiguity.
 
 A controller-created ConfigMap stores the first activation time. Completions older than that are ignored on first installation; later retained completions can be recovered after restarts. Do not delete this ConfigMap while expecting recovery across a restart. A Helm uninstall intentionally leaves the controller-created ConfigMap in place.
 
@@ -139,8 +142,8 @@ resumption, restart, and deletion. It needs no local Docker daemon or image regi
 The build container is limited to 2 CPUs and 2 GiB of memory and needs outbound
 access to the Go module proxy. Allow up to ten minutes for the first build.
 
-The test watches only its temporary namespace, disables notification channels,
-and excludes its CronJobs from Cronitor. It uses your real Healthchecks instance,
+The test watches only its temporary namespace and disables notification channels.
+It uses your real Healthchecks instance,
 then deletes the namespace and only the checks carrying its exact test ownership
 tag and name prefix. If interrupted with SIGKILL or if cleanup cannot reach either
 API, remove the reported test namespace and its test-owned checks manually.
@@ -165,9 +168,14 @@ The runtime does not automatically load `.env`. API keys are read from `HEALTHCH
 
 The process serves `/healthz` and `/readyz` on port 8080. Readiness requires leadership and synchronized Kubernetes caches; it does not guarantee Healthchecks is reachable. Watch controller error logs for delivery failures. HTTP error messages omit request URLs and response bodies because these may contain credentials.
 
+## License
+
+Licensed under the [MIT License](LICENSE). The upstream Cronitor copyright and
+license notice are preserved in that file.
+
 ## References
 
 - [Healthchecks Management API](https://healthchecks.io/docs/api/)
 - [Healthchecks Pinging API](https://healthchecks.io/docs/http_api/)
 - [Kubernetes Job lifecycle](https://kubernetes.io/docs/concepts/workloads/controllers/job/)
-- [Cronitor Kubernetes agent](https://github.com/cronitorio/cronitor-kubernetes), used as a behavior reference; no source copied.
+- [Cronitor Kubernetes agent](https://github.com/cronitorio/cronitor-kubernetes), the MIT-licensed project that inspired this controller.

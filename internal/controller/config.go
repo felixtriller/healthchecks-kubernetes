@@ -15,7 +15,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-const Prefix = "healthchecks.io/"
+const Prefix = "healthchecks-kubernetes.felixtriller.github.io/"
 const DeliveryAnnotation = Prefix + "delivery"
 
 var clusterPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,62}$`)

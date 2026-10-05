@@ -1,8 +1,8 @@
-# Main is a rolling build. Pin a release or sha-<commit> tag in GitOps.
+# Release image; keep this in sync with Chart.yaml appVersion.
 image:
   repository: ghcr.io/felixtriller/healthchecks-kubernetes
-  tag: "main"
-  pullPolicy: Always
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -13,7 +13,8 @@ credentials:
   key: HEALTHCHECKS_API_KEY
 
 config:
-  apiUrl: https://healthchecks.example.com/api/v3
+  # Override with your instance URL when using self-hosted Healthchecks.
+  apiUrl: https://healthchecks.io/api/v3
   # Required. Keep this stable and unique across clusters sharing a project.
   cluster: ""
   # Empty watches all namespaces. A value restricts watches and RBAC to that namespace.
