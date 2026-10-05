@@ -133,7 +133,7 @@ The controller does not collect Pod logs, use Cronitor annotations, adopt existi
 With access to a test cluster and the API credentials in `.env`:
 
 ```sh
-python3 scripts/smoke-test.py --context k3s
+python3 scripts/smoke-test.py --context '<test-context>'
 ```
 
 This creates a temporary namespace, builds the controller inside a Go init container,
