@@ -1,8 +1,8 @@
-# Build and push this image to your registry before installing.
+# Main is a rolling build. Pin a release or sha-<commit> tag in GitOps.
 image:
-  repository: healthchecks-kubernetes
-  tag: "0.1.0"
-  pullPolicy: IfNotPresent
+  repository: ghcr.io/felixtriller/healthchecks-kubernetes
+  tag: "main"
+  pullPolicy: Always
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""

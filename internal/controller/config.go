@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Placetel/healthchecks-kubernetes/internal/healthchecks"
+	"github.com/felixtriller/healthchecks-kubernetes/internal/healthchecks"
 	batchv1 "k8s.io/api/batch/v1"
 )
 

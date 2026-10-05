@@ -1,4 +1,4 @@
-module github.com/Placetel/healthchecks-kubernetes
+module github.com/felixtriller/healthchecks-kubernetes
 
 go 1.25.0
 

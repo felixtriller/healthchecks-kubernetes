@@ -1,11 +1,13 @@
-FROM golang:1.25-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd/ cmd/
 COPY internal/ internal/
+ARG TARGETOS
+ARG TARGETARCH
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /healthchecks-kubernetes ./cmd/healthchecks-kubernetes
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w -X main.version=${VERSION}" -o /healthchecks-kubernetes ./cmd/healthchecks-kubernetes
 
 FROM alpine:3.23
 RUN apk add --no-cache ca-certificates

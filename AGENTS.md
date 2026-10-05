@@ -61,6 +61,15 @@ Secret read permissions. For dependency changes, update `go.mod` and `go.sum`
 together and check `go mod tidy -diff`. Documentation-only changes need a diff
 review, not a live deployment.
 
+## Image publishing
+
+The repository is `felixtriller/healthchecks-kubernetes`; images are published to
+`ghcr.io/felixtriller/healthchecks-kubernetes`. The CI image job depends on tests
+and only publishes from `main` or version tags. Preserve that boundary: pull
+requests must not log in to the registry or publish images. Keep package write
+permission scoped to the publishing job. The Dockerfile cross-compiles for amd64
+and arm64; do not replace the target architecture with the builder architecture.
+
 ## Credentials and live testing
 
 - `.env` is local and ignored. Never print or commit its values, ping URLs, or

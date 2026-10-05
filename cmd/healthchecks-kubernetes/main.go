@@ -14,8 +14,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/Placetel/healthchecks-kubernetes/internal/controller"
-	"github.com/Placetel/healthchecks-kubernetes/internal/healthchecks"
+	"github.com/felixtriller/healthchecks-kubernetes/internal/controller"
+	"github.com/felixtriller/healthchecks-kubernetes/internal/healthchecks"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

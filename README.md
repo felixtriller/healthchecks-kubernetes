@@ -29,11 +29,30 @@ make lint test build chart
 The tests use a fake Kubernetes client and mocked HTTP transport. They do not contact a real cluster or Healthchecks project. `make test` runs the race detector. CI also builds the container image.
 
 ```sh
-docker build --build-arg VERSION=0.1.0 -t your-registry/healthchecks-kubernetes:0.1.0 .
-docker push your-registry/healthchecks-kubernetes:0.1.0
+docker build --build-arg VERSION=dev -t healthchecks-kubernetes:dev .
+docker run --rm healthchecks-kubernetes:dev --version
 ```
 
-No prebuilt image is published by this repository yet. Replace the example registry before deployment.
+## Container images
+
+GitHub Actions builds and publishes `ghcr.io/felixtriller/healthchecks-kubernetes`
+for `linux/amd64` and `linux/arm64` after the test job succeeds:
+
+- Pushes to `main` publish `main` and `sha-<full-commit>` tags.
+- Version tags such as `v0.1.0` publish `0.1.0`, `0.1`, and a commit tag.
+  Stable version tags also publish `latest`; prereleases do not update `latest`.
+- Pull requests and other branches run validation and a local image build without
+  publishing. The workflow can also be started manually on `main` or a version tag.
+
+Publishing uses the workflow's `GITHUB_TOKEN` with `packages: write`; no registry
+password or Healthchecks credentials need to be configured in Actions. An image
+is available only after its publishing run succeeds. Pin a release or a
+commit-specific tag in GitOps. If the GHCR package is private, configure the
+chart's `imagePullSecrets` with credentials that can read the package.
+
+```sh
+docker pull ghcr.io/felixtriller/healthchecks-kubernetes:main
+```
 
 ## Install
 
@@ -44,13 +63,11 @@ kubectl create namespace monitoring
 kubectl -n monitoring create secret generic healthchecks-api --from-env-file=.env
 ```
 
-Install using your own image:
+Install using the image published from `main`:
 
 ```sh
 helm upgrade --install healthchecks ./charts/healthchecks-kubernetes \
   --namespace monitoring \
-  --set image.repository=your-registry/healthchecks-kubernetes \
-  --set image.tag=0.1.0 \
   --set config.apiUrl=https://healthchecks.example.com/api/v3 \
   --set config.cluster=production-eu \
   --set credentials.existingSecret=healthchecks-api
