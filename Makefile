@@ -15,5 +15,5 @@ chart:
 	helm template healthchecks charts/healthchecks-kubernetes --set config.cluster=ci --set credentials.existingSecret=healthchecks > /dev/null
 
 licenses:
-	sh scripts/third-party-licenses.sh > THIRD_PARTY_LICENSES.tmp
-	mv THIRD_PARTY_LICENSES.tmp THIRD_PARTY_LICENSES
+	mkdir -p bin
+	sh scripts/third-party-licenses.sh > bin/THIRD_PARTY_LICENSES

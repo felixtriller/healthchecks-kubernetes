@@ -1,7 +1,7 @@
 #!/bin/sh
 # Writes the license and NOTICE files of everything compiled into the Linux
-# controller binary: the Go runtime and each dependency module. Run `make licenses`
-# after dependency changes; CI fails if THIRD_PARTY_LICENSES is out of date.
+# controller binary: the Go runtime and each dependency module. The image build
+# runs it; `make licenses` writes a local copy to bin/THIRD_PARTY_LICENSES.
 set -eu
 
 modules() {

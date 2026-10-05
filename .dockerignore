@@ -2,7 +2,7 @@
 !go.mod
 !go.sum
 !LICENSE
-!THIRD_PARTY_LICENSES
+!scripts/third-party-licenses.sh
 !cmd/
 !cmd/**
 !internal/

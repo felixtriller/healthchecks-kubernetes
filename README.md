@@ -33,7 +33,7 @@ docker build --build-arg VERSION=dev -t healthchecks-kubernetes:dev .
 docker run --rm healthchecks-kubernetes:dev --version
 ```
 
-After changing dependencies, run `make licenses` to regenerate `THIRD_PARTY_LICENSES`. CI fails if it is out of date.
+Licenses and notices of the Go runtime and all compiled-in dependencies are generated during the image build. `make licenses` writes the same file to `bin/THIRD_PARTY_LICENSES`.
 
 ## Container images
 
@@ -172,10 +172,9 @@ The process serves `/healthz` and `/readyz` on port 8080. Readiness requires lea
 
 ## License
 
-Licensed under the [MIT License](LICENSE). Licenses and notices of the Go runtime
-and dependencies compiled into the binary are in
-[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES); container images include both files
-in `/usr/share/licenses/healthchecks-kubernetes/`.
+Licensed under the [MIT License](LICENSE). Container images include this license
+and the generated licenses and notices of the Go runtime and all compiled-in
+dependencies in `/usr/share/licenses/healthchecks-kubernetes/`.
 
 ## References
 
