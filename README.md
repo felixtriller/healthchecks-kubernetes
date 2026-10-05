@@ -2,7 +2,7 @@
 
 A Go controller that automatically monitors Kubernetes CronJobs in [Healthchecks](https://github.com/healthchecks/healthchecks), including self-hosted instances. It watches CronJobs and Jobs; no changes to job commands, container images, or application code are required.
 
-This is an independent project and is not affiliated with or endorsed by Healthchecks.io. It uses Kubernetes client-go informers, a retry queue, and leader election. It does not depend on Cronitor or send third-party telemetry.
+This is an independent project and is not affiliated with or endorsed by Healthchecks.io. It uses Kubernetes client-go informers, a retry queue, and leader election.
 
 ## What it does
 
@@ -106,7 +106,7 @@ The controller maintains its own tags for ownership, cluster, and namespace. Tag
 
 Schedules come from `spec.schedule`; standard Kubernetes macros such as `@daily` are expanded to five-field cron expressions. Timezones come from `spec.timeZone`. If omitted, `config.timezone` defaults to UTC: **set it to match your kube-controller-manager timezone** if that differs.
 
-Healthchecks uses its grace period for late runs and for execution time after a start ping. Choose it to cover the expected runtime and scheduling delays. This is not a direct replacement for Cronitor's independent duration assertions.
+Healthchecks uses its grace period for late runs and for execution time after a start ping. Choose it to cover the expected runtime and scheduling delays.
 
 The Kubernetes configuration is the source of truth. Changes to managed fields in the Healthchecks dashboard are overwritten during reconciliation. A paused check for an included, unsuspended CronJob is resumed. Manage suspension from Kubernetes.
 
@@ -128,7 +128,7 @@ Management requests are spaced at least 650 ms apart. Pings are spaced at least 
 
 Suspended CronJobs do not emit run signals. Their checks are paused. On resumption, retained, unreported Job outcomes may be delivered. Exclusion and deletion pause checks at the next cleanup pass. Checks are never automatically deleted, and cleanup only touches checks with this controller's exact ownership tag.
 
-The controller does not collect Pod logs, use Cronitor annotations, adopt existing manual checks, or instrument ordinary Jobs without a controlling CronJob owner reference. To migrate from Cronitor, translate the annotations listed above and configure Healthchecks integrations separately.
+The controller does not collect Pod logs, adopt existing manual checks, or instrument ordinary Jobs without a controlling CronJob owner reference.
 
 ## Isolated live smoke test
 
