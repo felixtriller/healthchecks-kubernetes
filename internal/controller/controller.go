@@ -59,6 +59,9 @@ type Controller struct {
 const ownerIndex = "cronjob-owner"
 const sweepKey = "/"
 
+// Deadline for direct API requests; watches are managed by the informers.
+const kubeRequestTimeout = 30 * time.Second
+
 func New(config Config, kube kubernetes.Interface, backend Backend) (*Controller, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
@@ -160,6 +163,8 @@ func (c *Controller) Run(ctx context.Context) error {
 }
 
 func (c *Controller) loadCutoff(ctx context.Context) (time.Time, error) {
+	ctx, cancel := context.WithTimeout(ctx, kubeRequestTimeout)
+	defer cancel()
 	cms := c.kube.CoreV1().ConfigMaps(c.config.StateNamespace)
 	cm, err := cms.Get(ctx, c.config.StateName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
@@ -350,7 +355,9 @@ func signalTime(job *batchv1.Job) time.Time {
 
 func (c *Controller) deliver(ctx context.Context, check healthchecks.Check, cached *batchv1.Job) error {
 	// A direct read sees delivery checkpoints even when the informer is behind.
-	job, err := c.kube.BatchV1().Jobs(cached.Namespace).Get(ctx, cached.Name, metav1.GetOptions{})
+	readCtx, cancelRead := context.WithTimeout(ctx, kubeRequestTimeout)
+	job, err := c.kube.BatchV1().Jobs(cached.Namespace).Get(readCtx, cached.Name, metav1.GetOptions{})
+	cancelRead()
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
@@ -388,11 +395,16 @@ func (c *Controller) deliver(ctx context.Context, check healthchecks.Check, cach
 	if err := c.backend.Ping(ctx, check, string(job.UID), signal); err != nil {
 		return err
 	}
+	// Only the leader writes this annotation, so the UID precondition suffices.
+	// A resourceVersion precondition would conflict with the Job controller's
+	// status updates during the ping and force a repeated ping on retry.
 	marker, _ := json.Marshal(delivery{Check: checkIdentity, Signal: signal})
 	patch, _ := json.Marshal(map[string]any{"metadata": map[string]any{
-		"uid": job.UID, "resourceVersion": job.ResourceVersion, "annotations": map[string]string{DeliveryAnnotation: string(marker)},
+		"uid": job.UID, "annotations": map[string]string{DeliveryAnnotation: string(marker)},
 	}})
-	if _, err := c.kube.BatchV1().Jobs(job.Namespace).Patch(ctx, job.Name, types.MergePatchType, patch, metav1.PatchOptions{}); err != nil {
+	patchCtx, cancelPatch := context.WithTimeout(ctx, kubeRequestTimeout)
+	defer cancelPatch()
+	if _, err := c.kube.BatchV1().Jobs(job.Namespace).Patch(patchCtx, job.Name, types.MergePatchType, patch, metav1.PatchOptions{}); err != nil {
 		return fmt.Errorf("ping accepted but Job checkpoint failed; retry may repeat ping")
 	}
 	return nil

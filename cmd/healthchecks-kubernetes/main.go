@@ -75,7 +75,8 @@ func run() error {
 		return errors.New("cannot load Kubernetes credentials; supply --kubeconfig outside the cluster")
 	}
 	kubeConfig.UserAgent = "healthchecks-kubernetes/" + version
-	kubeConfig.Timeout = 30 * time.Second
+	// No client-wide timeout: rest.Config.Timeout also cuts informer watch streams.
+	// Direct requests get per-call deadlines in the controller.
 	kube, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return errors.New("cannot create Kubernetes client")

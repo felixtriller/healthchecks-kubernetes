@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -362,5 +363,29 @@ func TestRunSynchronizesWatchesAndStops(t *testing.T) {
 	}
 	if c.Ready() {
 		t.Fatal("stopped controller is still ready")
+	}
+}
+
+func TestCheckpointPatchUsesOnlyUIDPrecondition(t *testing.T) {
+	cronjob := testCronJob()
+	job := testJob(cronjob)
+	c, kube := fixture(t, &fakeBackend{}, cronjob, job)
+	var patch []byte
+	kube.PrependReactor("patch", "jobs", func(action ktesting.Action) (bool, runtime.Object, error) {
+		patch = action.(ktesting.PatchAction).GetPatch()
+		return false, nil, nil
+	})
+	reconcile(t, c, cronjob)
+	var body struct {
+		Metadata map[string]json.RawMessage `json:"metadata"`
+	}
+	if err := json.Unmarshal(patch, &body); err != nil {
+		t.Fatalf("checkpoint patch missing or invalid: %v", err)
+	}
+	if _, found := body.Metadata["resourceVersion"]; found {
+		t.Fatal("checkpoint patch carries a resourceVersion precondition; concurrent status updates would force duplicate pings")
+	}
+	if string(body.Metadata["uid"]) != `"`+testJobID+`"` {
+		t.Fatalf("checkpoint patch must be guarded by the Job UID, got %s", body.Metadata["uid"])
 	}
 }
