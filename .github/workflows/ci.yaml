@@ -16,6 +16,8 @@ jobs:
       - run: go mod download
       - run: go mod tidy -diff
       - run: make lint test build
+      - name: Check third-party licenses are current
+        run: make licenses && git diff --exit-code THIRD_PARTY_LICENSES
       - uses: azure/setup-helm@v4.3.0
         with:
           version: v3.17.1
@@ -23,6 +25,7 @@ jobs:
       - run: helm template scoped charts/healthchecks-kubernetes --namespace monitoring --set config.cluster=ci --set config.namespace=jobs --set credentials.existingSecret=healthchecks > /dev/null
       - run: docker build --build-arg VERSION=ci -t healthchecks-kubernetes:test .
       - run: test "$(docker run --rm healthchecks-kubernetes:test --version)" = ci
+      - run: docker run --rm --entrypoint /bin/sh healthchecks-kubernetes:test -c 'test -s /usr/share/licenses/healthchecks-kubernetes/LICENSE && test -s /usr/share/licenses/healthchecks-kubernetes/THIRD_PARTY_LICENSES'
 
   image:
     name: Publish container image

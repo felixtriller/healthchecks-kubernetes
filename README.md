@@ -33,6 +33,8 @@ docker build --build-arg VERSION=dev -t healthchecks-kubernetes:dev .
 docker run --rm healthchecks-kubernetes:dev --version
 ```
 
+After changing dependencies, run `make licenses` to regenerate `THIRD_PARTY_LICENSES`. CI fails if it is out of date.
+
 ## Container images
 
 GitHub Actions builds and publishes `ghcr.io/felixtriller/healthchecks-kubernetes`
@@ -170,7 +172,10 @@ The process serves `/healthz` and `/readyz` on port 8080. Readiness requires lea
 
 ## License
 
-Licensed under the [MIT License](LICENSE).
+Licensed under the [MIT License](LICENSE). Licenses and notices of the Go runtime
+and dependencies compiled into the binary are in
+[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES); container images include both files
+in `/usr/share/licenses/healthchecks-kubernetes/`.
 
 ## References
 
