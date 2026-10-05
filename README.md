@@ -56,6 +56,23 @@ chart's `imagePullSecrets` with credentials that can read the package.
 docker pull ghcr.io/felixtriller/healthchecks-kubernetes:0.1.0
 ```
 
+## Helm chart
+
+Version tags also publish the chart to
+`oci://ghcr.io/felixtriller/charts/healthchecks-kubernetes` after the image has
+published successfully. CI packages and renders the chart on every change;
+only version tags publish it. The chart includes the project license.
+
+For each release, keep the chart's `version`, `appVersion`, and default image tag
+in sync. A tag such as `v0.1.0` must match chart version `0.1.0` or CI fails before
+publishing. Run `sh scripts/package-chart.sh` to validate and package it locally.
+
+Flux can consume this chart through an `OCIRepository` referenced by a
+`HelmRelease`. Pin the chart version in GitOps. While the chart package is private,
+the Flux source needs registry credentials separately from the application's
+`imagePullSecrets`. The chart and container image have separate GHCR visibility
+settings.
+
 ## Install
 
 Create a namespace and a Secret containing `HEALTHCHECKS_API_KEY`. A local `.env` file is ignored by Git and excluded from the Docker build context. Copy `.env.example` only if you do not already have `.env`, then fill in your instance URL and key.
@@ -68,15 +85,20 @@ kubectl -n monitoring create secret generic healthchecks-api --from-env-file=.en
 The chart defaults to release `0.1.0` with `image.pullPolicy=IfNotPresent`.
 Both the chart and binary default to `https://healthchecks.io/api/v3`.
 For a self-hosted instance, override `config.apiUrl` as shown below.
-Install after the release image has been published:
+Install after the release image and chart have been published:
 
 ```sh
-helm upgrade --install healthchecks ./charts/healthchecks-kubernetes \
+helm upgrade --install healthchecks oci://ghcr.io/felixtriller/charts/healthchecks-kubernetes \
+  --version 0.1.0 \
   --namespace monitoring \
   --set config.apiUrl=https://healthchecks.example.com/api/v3 \
   --set config.cluster=production-eu \
   --set credentials.existingSecret=healthchecks-api
 ```
+
+For an unpublished local chart, replace the OCI URL and `--version` argument with
+`./charts/healthchecks-kubernetes`. For a private chart, first authenticate using
+`helm registry login ghcr.io` with a token that has package read access.
 
 Choose a stable, unique `config.cluster` for each cluster sharing a Healthchecks project. Changing it creates a new set of checks. A cluster name can contain lowercase letters, digits, and hyphens, with a maximum of 63 characters.
 

@@ -4,3 +4,8 @@ description: Automatically monitor Kubernetes CronJobs with self-hosted Healthch
 version: 0.1.0
 appVersion: "0.1.0"
 type: application
+home: https://github.com/felixtriller/healthchecks-kubernetes
+sources:
+  - https://github.com/felixtriller/healthchecks-kubernetes
+annotations:
+  org.opencontainers.image.source: https://github.com/felixtriller/healthchecks-kubernetes
