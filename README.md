@@ -170,8 +170,7 @@ The process serves `/healthz` and `/readyz` on port 8080. Readiness requires lea
 
 ## License
 
-Licensed under the [MIT License](LICENSE). The upstream Cronitor copyright and
-license notice are preserved in that file.
+Licensed under the [MIT License](LICENSE).
 
 ## References
 
