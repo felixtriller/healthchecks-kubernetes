@@ -126,6 +126,8 @@ The controller processes retained completions oldest first. Healthchecks records
 
 Management requests are spaced at least 650 ms apart. Pings are spaced at least 13 seconds apart per check to stay within Healthchecks' documented five-pings-per-minute limit. A deferred ping does not block other CronJobs. High-concurrency schedules may build a backlog.
 
+Every check is re-synchronized once per `config.resync` and a single worker delivers signals in order, so worst-case delivery latency grows with the number of monitored CronJobs, roughly 1.5 seconds per CronJob. With several hundred CronJobs, raise the grace period or the resync interval so success pings arrive within the grace period.
+
 Suspended CronJobs do not emit run signals. Their checks are paused. On resumption, retained, unreported Job outcomes may be delivered. Exclusion and deletion pause checks at the next cleanup pass. Checks are never automatically deleted, and cleanup only touches checks with this controller's exact ownership tag.
 
 The controller does not collect Pod logs, adopt existing manual checks, or instrument ordinary Jobs without a controlling CronJob owner reference.
