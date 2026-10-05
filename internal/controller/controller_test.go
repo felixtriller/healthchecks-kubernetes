@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/felixtriller/healthchecks-kubernetes/internal/healthchecks"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -30,6 +32,7 @@ type fakeBackend struct {
 	upserts  int
 	failPing bool
 	state    string
+	onPing   func() error
 }
 
 func (b *fakeBackend) List(context.Context, string) ([]healthchecks.Check, error) {
@@ -57,6 +60,9 @@ func (b *fakeBackend) Ping(_ context.Context, _ healthchecks.Check, id, signal s
 	}
 	b.signals = append(b.signals, signal)
 	b.runIDs = append(b.runIDs, id)
+	if b.onPing != nil {
+		return b.onPing()
+	}
 	return nil
 }
 
@@ -362,5 +368,66 @@ func TestRunSynchronizesWatchesAndStops(t *testing.T) {
 	}
 	if c.Ready() {
 		t.Fatal("stopped controller is still ready")
+	}
+}
+
+func TestStatusUpdateDuringPingDoesNotRepeatDelivery(t *testing.T) {
+	ctx := context.Background()
+	cronjob := testCronJob()
+	job := testJob(cronjob)
+	job.ResourceVersion = "1"
+	backend := &fakeBackend{}
+	c, kube := fixture(t, backend, cronjob, job)
+	backend.onPing = func() error {
+		current, err := kube.BatchV1().Jobs(job.Namespace).Get(ctx, job.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		// The Job controller records a failed Pod while the start ping is in flight.
+		// The Job is still running; the fake client needs an explicit version bump.
+		current.Status.Failed++
+		current.ResourceVersion = "2"
+		_, err = kube.BatchV1().Jobs(job.Namespace).UpdateStatus(ctx, current, metav1.UpdateOptions{})
+		return err
+	}
+	kube.PrependReactor("patch", "jobs", func(action ktesting.Action) (bool, runtime.Object, error) {
+		var body struct {
+			Metadata metav1.ObjectMeta `json:"metadata"`
+		}
+		if err := json.Unmarshal(action.(ktesting.PatchAction).GetPatch(), &body); err != nil {
+			return true, nil, err
+		}
+		current, err := kube.Tracker().Get(batchv1.SchemeGroupVersion.WithResource("jobs"), job.Namespace, job.Name)
+		if err != nil {
+			return true, nil, err
+		}
+		latest := current.(*batchv1.Job)
+		if body.Metadata.UID != latest.UID {
+			t.Fatal("checkpoint patch must be guarded by the Job UID")
+		}
+		// The fake API does not enforce resourceVersion conflicts on its own.
+		if body.Metadata.ResourceVersion != "" && body.Metadata.ResourceVersion != latest.ResourceVersion {
+			return true, nil, apierrors.NewConflict(batchv1.Resource("jobs"), job.Name, errors.New("Job status changed during ping"))
+		}
+		return false, nil, nil
+	})
+	reconcile(t, c, cronjob)
+	reconcile(t, c, cronjob) // Keep the informer stale to exercise the persisted checkpoint.
+	if fmt.Sprint(backend.signals) != "[start]" {
+		t.Fatalf("status update caused duplicate delivery: %v", backend.signals)
+	}
+	current, err := kube.BatchV1().Jobs(job.Namespace).Get(ctx, job.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if current.Status.Failed != 1 || current.ResourceVersion != "2" {
+		t.Fatal("checkpoint patch lost the concurrent status update")
+	}
+	var checkpoint delivery
+	if err := json.Unmarshal([]byte(current.Annotations[DeliveryAnnotation]), &checkpoint); err != nil {
+		t.Fatalf("missing delivery checkpoint: %v", err)
+	}
+	if checkpoint.Signal != "start" {
+		t.Fatalf("unexpected checkpoint signal: %s", checkpoint.Signal)
 	}
 }

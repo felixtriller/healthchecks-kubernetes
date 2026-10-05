@@ -16,8 +16,6 @@ jobs:
       - run: go mod download
       - run: go mod tidy -diff
       - run: make lint test build
-      - name: Check third-party licenses are current
-        run: make licenses && git diff --exit-code THIRD_PARTY_LICENSES
       - uses: azure/setup-helm@v4.3.0
         with:
           version: v3.17.1

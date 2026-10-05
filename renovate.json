@@ -1,0 +1,22 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices"
+  ],
+  "automerge": false,
+  "postUpdateOptions": ["gomodTidy"],
+  "packageRules": [
+    {
+      "description": "Keep the go.mod toolchain and the builder image on the same Go release",
+      "groupName": "Go toolchain",
+      "matchDatasources": ["golang-version", "docker"],
+      "matchPackageNames": ["go", "golang"]
+    },
+    {
+      "description": "golang.org/x modules move together",
+      "groupName": "golang.org/x",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["/^golang\\.org/x//"]
+    }
+  ]
+}

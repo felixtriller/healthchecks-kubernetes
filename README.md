@@ -33,7 +33,7 @@ docker build --build-arg VERSION=dev -t healthchecks-kubernetes:dev .
 docker run --rm healthchecks-kubernetes:dev --version
 ```
 
-After changing dependencies, run `make licenses` to regenerate `THIRD_PARTY_LICENSES`. CI fails if it is out of date.
+Licenses and notices of the Go runtime and all compiled-in dependencies are generated during the image build. `make licenses` writes the same file to `bin/THIRD_PARTY_LICENSES`.
 
 ## Container images
 
@@ -126,6 +126,8 @@ The controller processes retained completions oldest first. Healthchecks records
 
 Management requests are spaced at least 650 ms apart. Pings are spaced at least 13 seconds apart per check to stay within Healthchecks' documented five-pings-per-minute limit. A deferred ping does not block other CronJobs. High-concurrency schedules may build a backlog.
 
+A single worker processes reconciliation and delivers signals. More monitored CronJobs and retained Jobs, slower API responses, and retries can increase queue delays. Allow for these delays when choosing the grace period. Increasing `config.resync` reduces periodic synchronization traffic, but does not guarantee a delivery deadline.
+
 Suspended CronJobs do not emit run signals. Their checks are paused. On resumption, retained, unreported Job outcomes may be delivered. Exclusion and deletion pause checks at the next cleanup pass. Checks are never automatically deleted, and cleanup only touches checks with this controller's exact ownership tag.
 
 The controller does not collect Pod logs, adopt existing manual checks, or instrument ordinary Jobs without a controlling CronJob owner reference.
@@ -172,10 +174,9 @@ The process serves `/healthz` and `/readyz` on port 8080. Readiness requires lea
 
 ## License
 
-Licensed under the [MIT License](LICENSE). Licenses and notices of the Go runtime
-and dependencies compiled into the binary are in
-[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES); container images include both files
-in `/usr/share/licenses/healthchecks-kubernetes/`.
+Licensed under the [MIT License](LICENSE). Container images include this license
+and the generated licenses and notices of the Go runtime and all compiled-in
+dependencies in `/usr/share/licenses/healthchecks-kubernetes/`.
 
 ## References
 
