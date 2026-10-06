@@ -13,6 +13,7 @@ lint:
 chart:
 	helm lint charts/healthchecks-kubernetes --set config.cluster=ci --set credentials.existingSecret=healthchecks
 	helm template healthchecks charts/healthchecks-kubernetes --set config.cluster=ci --set credentials.existingSecret=healthchecks > /dev/null
+	python3 scripts/test-chart-labels.py
 
 licenses:
 	mkdir -p bin
