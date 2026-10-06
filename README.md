@@ -41,7 +41,7 @@ GitHub Actions builds and publishes `ghcr.io/felixtriller/healthchecks-kubernete
 for `linux/amd64` and `linux/arm64` after the test job succeeds:
 
 - Pushes to `main` publish `main` and `sha-<full-commit>` tags.
-- Version tags such as `v0.1.0` publish `0.1.0`, `0.1`, and a commit tag.
+- Version tags such as `v0.1.1` publish `0.1.1`, `0.1`, and a commit tag.
   Stable version tags also publish `latest`; prereleases do not update `latest`.
 - Pull requests and other branches run validation and a local image build without
   publishing. The workflow can also be started manually on `main` or a version tag.
@@ -53,7 +53,7 @@ commit-specific tag in GitOps. If the GHCR package is private, configure the
 chart's `imagePullSecrets` with credentials that can read the package.
 
 ```sh
-docker pull ghcr.io/felixtriller/healthchecks-kubernetes:0.1.0
+docker pull ghcr.io/felixtriller/healthchecks-kubernetes:0.1.1
 ```
 
 ## Helm chart
@@ -64,7 +64,7 @@ published successfully. CI packages and renders the chart on every change;
 only version tags publish it. The chart includes the project license.
 
 For each release, keep the chart's `version`, `appVersion`, and default image tag
-in sync. A tag such as `v0.1.0` must match chart version `0.1.0` or CI fails before
+in sync. A tag such as `v0.1.1` must match chart version `0.1.1` or CI fails before
 publishing. Run `sh scripts/package-chart.sh` to validate and package it locally.
 
 Flux can consume this chart through an `OCIRepository` referenced by a
@@ -82,14 +82,14 @@ kubectl create namespace monitoring
 kubectl -n monitoring create secret generic healthchecks-api --from-env-file=.env
 ```
 
-The chart defaults to release `0.1.0` with `image.pullPolicy=IfNotPresent`.
+The chart defaults to release `0.1.1` with `image.pullPolicy=IfNotPresent`.
 Both the chart and binary default to `https://healthchecks.io/api/v3`.
 For a self-hosted instance, override `config.apiUrl` as shown below.
 Install after the release image and chart have been published:
 
 ```sh
 helm upgrade --install healthchecks oci://ghcr.io/felixtriller/charts/healthchecks-kubernetes \
-  --version 0.1.0 \
+  --version 0.1.1 \
   --namespace monitoring \
   --set config.apiUrl=https://healthchecks.example.com/api/v3 \
   --set config.cluster=production-eu \
